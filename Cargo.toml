@@ -1,0 +1,7 @@
+[package]
+name = "wasm-rpc"
+version = "0.1.0"
+authors = ["Mason Fischer <mason@kissr.co>"]
+
+[dependencies]
+cbor-no-std = { path = '../rust-cbor-no-std', features = ["no_std"] }
