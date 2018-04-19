@@ -1,0 +1,14 @@
+[[package]]
+name = "cbor-no-std"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+
+[[package]]
+name = "wasm-rpc"
+version = "0.1.0"
+dependencies = [
+ "cbor-no-std 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[metadata]
+"checksum cbor-no-std 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "2b5c73000004748b2964bbf46bef5299afdb3f4f8c2b15cc8c5894bfbf9925fd"

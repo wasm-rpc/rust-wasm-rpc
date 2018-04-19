@@ -1,7 +1,9 @@
 [package]
 name = "wasm-rpc"
+description = "WASM rpc is a standard interface to programs that compile to WebAssembly"
+license = "MIT"
 version = "0.1.0"
 authors = ["Mason Fischer <mason@kissr.co>"]
 
 [dependencies]
-cbor-no-std = { path = '../rust-cbor-no-std', features = ["no_std"] }
+cbor-no-std = { version = '0.1.0', features = ["no_std"] }
