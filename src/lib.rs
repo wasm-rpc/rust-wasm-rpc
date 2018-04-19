@@ -1,11 +1,15 @@
-#![feature(alloc)]
 #![no_std]
+#![feature(
+    alloc,
+    core_intrinsics,
+    )]
 #[macro_use] extern crate alloc;
 extern crate cbor_no_std;
 mod error;
-use alloc::vec::Vec;
-use alloc::String;
+pub mod memory;
 pub use error::{Error};
+use alloc::String;
+use alloc::Vec;
 use cbor_no_std::{from_bytes, to_bytes, Value};
 use core::mem;
 use core::slice;
