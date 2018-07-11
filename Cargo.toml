@@ -2,8 +2,8 @@
 name = "wasm-rpc"
 description = "WASM rpc is a standard interface to programs that compile to WebAssembly"
 license = "MIT"
-version = "0.1.1"
+version = "0.1.3"
 authors = ["Mason Fischer <mason@kissr.co>"]
 
 [dependencies]
-cbor-no-std = { version = '0.1.0', features = ["no_std"] }
+cbor-lite = "0.1.1"

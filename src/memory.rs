@@ -1,5 +1,4 @@
-use core::mem;
-use alloc::vec::Vec;
+use std::mem;
 
 #[no_mangle]
 pub unsafe fn deallocate(ptr: *mut u8, old_size: usize) {
