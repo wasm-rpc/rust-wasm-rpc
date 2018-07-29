@@ -1,11 +1,18 @@
-extern crate cbor_lite;
+#![no_std]
+#![feature(
+    alloc,
+    core_intrinsics,
+    )]
+#[macro_use] extern crate alloc;
+extern crate cbor_no_std;
 mod error;
 pub mod memory;
 pub use error::{Error};
-use std::collections::BTreeMap;
-use cbor_lite::{from_bytes, to_bytes, Value};
-use std::mem;
-use std::slice;
+use alloc::String;
+use alloc::Vec;
+use cbor_no_std::{from_bytes, to_bytes, Value};
+use core::mem;
+use core::slice;
 
 pub const LENGTH_BYTE_COUNT: usize = 4;
 
@@ -82,7 +89,6 @@ pub unsafe trait Dereferenceable {
     fn to_bytes(&self) -> Vec<u8>;
     fn to_string(&self) -> String;
     fn to_array(&self) -> Vec<Value>;
-    fn to_map(&self) -> BTreeMap<String, Value>;
 }
 
 unsafe impl Dereferenceable for Pointer {
@@ -107,11 +113,6 @@ unsafe impl Dereferenceable for Pointer {
     fn to_array(&self) -> Vec<Value> {
         let name = from_bytes(self.as_raw_bytes());
         name.as_array().unwrap().clone()
-    }
-
-    fn to_map(&self) -> BTreeMap<String, Value> {
-        let name = from_bytes(self.as_raw_bytes());
-        name.as_map().unwrap().clone()
     }
 }
 
@@ -164,7 +165,7 @@ impl Responsable for Result<Value, Error> {
 impl Responsable for Result<(), Error> {
     fn to_response(self) -> Pointer {
         match self {
-            Ok(_value) => (Ok::<Value, Error>(Value::Null)).to_response(),
+            Ok(value) => (Ok::<Value, Error>(value.into())).to_response(),
             Err(error) => (Err::<Value, Error>(error)).to_response()
         }
     }
@@ -173,7 +174,7 @@ impl Responsable for Result<(), Error> {
 impl Responsable for Result<u32, Error> {
     fn to_response(self) -> Pointer {
         match self {
-            Ok(value) => (Ok::<Value, Error>(Value::Int(value))).to_response(),
+            Ok(value) => (Ok::<Value, Error>(value.into())).to_response(),
             Err(error) => (Err::<Value, Error>(error)).to_response()
         }
     }
@@ -182,16 +183,7 @@ impl Responsable for Result<u32, Error> {
 impl Responsable for Result<Vec<u8>, Error> {
     fn to_response(self) -> Pointer {
         match self {
-            Ok(value) => (Ok::<Value, Error>(Value::Bytes(value))).to_response(),
-            Err(error) => (Err::<Value, Error>(error)).to_response()
-        }
-    }
-}
-
-impl Responsable for Result<BTreeMap<String, Value>, Error> {
-    fn to_response(self) -> Pointer {
-        match self {
-            Ok(value) => (Ok::<Value, Error>(Value::Map(value))).to_response(),
+            Ok(value) => (Ok::<Value, Error>(value.into())).to_response(),
             Err(error) => (Err::<Value, Error>(error)).to_response()
         }
     }
