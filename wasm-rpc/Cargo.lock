@@ -1,0 +1,11 @@
+[[package]]
+name = "cbor-no-std"
+version = "0.3.0"
+
+[[package]]
+name = "wasm-rpc"
+version = "0.1.1"
+dependencies = [
+ "cbor-no-std 0.3.0",
+]
+
