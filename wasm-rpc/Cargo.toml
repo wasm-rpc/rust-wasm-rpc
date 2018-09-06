@@ -6,5 +6,5 @@ version = "0.1.1"
 authors = ["Mason Fischer <mason@kissr.co>"]
 
 [dependencies]
-cbor-no-std = { path = '../../rust-cbor-no-std', features = ["no_std"] }
-wee_alloc = {"git" = "https://github.com/rustwasm/wee_alloc"}
+cbor-no-std = "0.3.0"
+wee_alloc = "0.4.2"
