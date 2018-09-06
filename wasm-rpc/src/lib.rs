@@ -174,7 +174,7 @@ impl Bytes<u32> for Vec<u8> {
 }
 
 impl From<core::option::NoneError> for Error {
-    fn from(mut value: core::option::NoneError) -> Error {
+    fn from(_value: core::option::NoneError) -> Error {
         Error {
             code: 1,
             message: "None Error",
