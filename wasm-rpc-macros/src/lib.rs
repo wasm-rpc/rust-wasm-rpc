@@ -37,7 +37,7 @@ pub fn export(_args: TokenStream, input: TokenStream) -> TokenStream {
 fn iterate_content_for(module_name: Ident, item: syn::Item) -> Option<syn::Item> {
     match item.clone() {
         syn::Item::Fn(mut f) => {
-            match(f.clone().vis) {
+            match f.clone().vis {
                 syn::Visibility::Public(_) => {
                     f = replace_with_export(module_name, f);
                     Some(syn::Item::Fn(f))
@@ -60,7 +60,7 @@ fn replace_with_export(module_name: Ident, f: syn::ItemFn) -> syn::ItemFn {
     } = f.clone();
     let syn::FnDecl {
         inputs,
-        output,
+        _output,
         fn_token,
         ..
     } = decl;
