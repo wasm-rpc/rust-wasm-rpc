@@ -1,7 +1,9 @@
-#![feature(type_ascription)]
-#![feature(box_patterns)]
-#![feature(proc_macro_quote)]
-#![feature(rustc_private)]
+#![feature(
+    type_ascription,
+    box_patterns,
+    proc_macro_quote,
+    rustc_private,
+)]
 #[macro_use]
 extern crate quote;
 extern crate proc_macro;
@@ -30,6 +32,36 @@ pub fn export(_args: TokenStream, input: TokenStream) -> TokenStream {
     quote!(
         use wasm_rpc::{Dereferenceable, Pointer, Responsable};
         mod #module_name;
+
+        #[cfg(not(debug_assertions))]
+        use core::panic::PanicInfo;
+
+        #[panic_handler]
+        #[cfg(not(debug_assertions))]
+        fn panic(_info: &PanicInfo) -> ! {
+            unsafe {
+                ::core::intrinsics::abort();
+            }
+        }
+        #[alloc_error_handler]
+        #[cfg(not(debug_assertions))]
+        fn out_of_memory(_: ::core::alloc::Layout) -> ! {
+            unsafe {
+                ::core::intrinsics::abort();
+            }
+        }
+
+
+        #[no_mangle]
+        pub unsafe fn alloc(size: usize) -> *mut u8 {
+            wasm_rpc::alloc(size)
+        }
+
+        #[no_mangle]
+        pub unsafe fn dealloc(ptr: *mut u8, old_size: usize) {
+            wasm_rpc::dealloc(ptr, old_size);
+        }
+
         #(#content)*
     ).into()
 }
@@ -60,7 +92,7 @@ fn replace_with_export(module_name: Ident, f: syn::ItemFn) -> syn::ItemFn {
     } = f.clone();
     let syn::FnDecl {
         inputs,
-        _output,
+        output: _,
         fn_token,
         ..
     } = decl;
@@ -130,6 +162,8 @@ fn replace_with_export(module_name: Ident, f: syn::ItemFn) -> syn::ItemFn {
         #[no_mangle]
         #vis #fn_token #ident (#(#new_inputs),*) -> Pointer
         {
+            #[cfg(debug_assertions)]
+            wasm_rpc::hook();
             #(#type_conversions);*
             #module_name::#ident(#(#new_input_names),*).to_response()
         }
