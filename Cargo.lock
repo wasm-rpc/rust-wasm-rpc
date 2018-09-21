@@ -64,7 +64,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "wasm-rpc"
-version = "0.2.4"
+version = "0.2.5"
 dependencies = [
  "cbor-no-std 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "wee_alloc 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)",

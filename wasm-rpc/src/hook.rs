@@ -1,7 +1,6 @@
 // Copied from https://raw.githubusercontent.com/DeMille/wasm-glue
 // Thanks Sterling DeMille!
 /// Sets stdout, stderr, and a custom panic hook
-/// Sets stdout, stderr, and a custom panic hook
 
 use pointer::Referenceable;
 use std::string::String;
@@ -15,10 +14,8 @@ const LOG_LEVEL_ERROR: u32 = 1;
 const LOG_LEVEL_WARNING: u32 = 3;
 const LOG_LEVEL_INFO: u32 = 6;
 
-// these are the functions you'll need to privide with JS
 extern {
     fn log_write(level: u32, message: *const u8);
-    fn eprint(ptr: *const u8);
 }
 
 
@@ -36,7 +33,7 @@ fn _eprint(buf: &str) -> io::Result<()> {
     let string: String = buf.into();
 
     unsafe {
-        eprint(string.as_pointer());
+        log_write(LOG_LEVEL_WARNING, string.as_pointer());
     }
 
     Ok(())
