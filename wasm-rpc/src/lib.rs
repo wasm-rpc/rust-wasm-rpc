@@ -4,12 +4,11 @@
     alloc_error_handler,
     core_intrinsics,
     panic_implementation,
-    panic_handler,
     try_trait,
     )]
 #![cfg_attr(debug_assertions, feature(set_stdio))]
 
-#[macro_use] extern crate alloc;
+extern crate alloc;
 extern crate cbor_no_std;
 #[cfg(test)]
 extern crate ellipticoin_test_framework as ellipticoin;

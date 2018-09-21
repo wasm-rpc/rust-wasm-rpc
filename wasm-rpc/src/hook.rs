@@ -6,8 +6,6 @@
 use pointer::Referenceable;
 use std::string::String;
 use std::boxed::Box;
-use std::ffi::CString;
-use std::os::raw::c_char;
 use std::fmt;
 use std::fmt::Write;
 use std::panic;
@@ -20,9 +18,7 @@ const LOG_LEVEL_INFO: u32 = 6;
 // these are the functions you'll need to privide with JS
 extern {
     fn log_write(level: u32, message: *const u8);
-    fn print(ptr: *const u8);
     fn eprint(ptr: *const u8);
-    fn trace(ptr: *const u8);
 }
 
 
@@ -123,21 +119,9 @@ pub fn set_stdout() {
     io::set_print(Some(Box::new(printer)));
 }
 
-/// Sets an unbuffered stdout, uses your JavaScript `print` function
-pub fn set_stdout_unbuffered() {
-    let printer = Printer::new(_print, false);
-    io::set_print(Some(Box::new(printer)));
-}
-
 /// Sets a line-buffered stderr, uses your JavaScript `eprint` function
 pub fn set_stderr() {
     let eprinter = Printer::new(_eprint, true);
-    io::set_panic(Some(Box::new(eprinter)));
-}
-
-/// Sets an unbuffered stderr, uses your JavaScript `eprint` function
-pub fn set_stderr_unbuffered() {
-    let eprinter = Printer::new(_eprint, false);
     io::set_panic(Some(Box::new(eprinter)));
 }
 
