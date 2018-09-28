@@ -19,7 +19,7 @@ mod pointer;
 
 use memory::ptr_from_vec;
 pub use error::{Error};
-pub use response::{Responsable};
+pub use response::{Responsable, Bytes};
 pub use pointer::{
     Pointer,
     Referenceable,
@@ -29,7 +29,10 @@ pub use pointer::{
 #[cfg(debug_assertions)]
 mod hook;
 #[cfg(debug_assertions)]
-pub use hook::{_print_args};
+pub use hook::{
+    _print_args,
+    _eprint_args,
+};
 #[cfg(debug_assertions)]
 pub use hook::{hook};
 #[cfg(debug_assertions)]
@@ -62,7 +65,7 @@ macro_rules! println {
 #[macro_export]
 macro_rules! eprintln {
     () => (print!("\n"));
-    ($($arg:tt)*) => (print!("{}\n", format_args!($($arg)*)))
+    ($($arg:tt)*) => (eprint!("{}\n", format_args!($($arg)*)))
 }
 
 /// Overrides the default `eprint!` macro.

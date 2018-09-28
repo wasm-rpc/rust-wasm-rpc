@@ -20,7 +20,7 @@ impl Responsable for Result<Value, Error> {
         };
 
         let mut return_value = match self {
-            Ok(Value::Null) => vec![],
+            Ok(Value::Null) => Vec::new(),
             Ok(value) => to_bytes(value),
             Err(error) => to_bytes(Value::String(error.message.into())),
         };

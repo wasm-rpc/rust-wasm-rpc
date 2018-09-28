@@ -40,14 +40,16 @@ pub fn export(_args: TokenStream, input: TokenStream) -> TokenStream {
         #[cfg(not(debug_assertions))]
         fn panic(_info: &PanicInfo) -> ! {
             unsafe {
-                ::core::intrinsics::abort();
+                loop {}
+                // ::core::intrinsics::abort();
             }
         }
         #[alloc_error_handler]
         #[cfg(not(debug_assertions))]
         fn out_of_memory(_: ::core::alloc::Layout) -> ! {
             unsafe {
-                ::core::intrinsics::abort();
+                loop {}
+                // ::core::intrinsics::abort();
             }
         }
 
@@ -143,6 +145,7 @@ fn replace_with_export(module_name: Ident, f: syn::ItemFn) -> syn::ItemFn {
                 match ty {
                     syn::Type::Path(syn::TypePath { path, .. }) => {
                         match quote!(#path).to_string().as_ref() {
+                            "String" => quote!(let #ident = #new_input_name_ident.to_string();),
                             "Vec < u8 >" => quote!(let #ident = #new_input_name_ident.to_bytes();),
                             "u64" => quote!(let #ident: u64 = #new_input_name_ident.to_int();),
                             "u32" => quote!(let #ident: u32 = #new_input_name_ident.to_int() as u32;),
