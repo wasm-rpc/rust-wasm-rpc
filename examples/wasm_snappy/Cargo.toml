@@ -1,0 +1,13 @@
+[package]
+name = "wasm_snappy"
+version = "0.1.0"
+authors = ["Mason Fischer <mason@kissr.co>"]
+edition = "2018"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+wasm-rpc = {path = "../../wasm-rpc"}
+wasm-rpc-macros = {path = "../../wasm-rpc-macros"}
+snap = "0.2"

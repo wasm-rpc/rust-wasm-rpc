@@ -1,5 +1,4 @@
-use core::mem;
-use alloc::vec::Vec;
+use std::mem;
 
 #[inline]
 pub fn ptr_from_vec(mut buf: Vec<u8>) -> *mut u8 {

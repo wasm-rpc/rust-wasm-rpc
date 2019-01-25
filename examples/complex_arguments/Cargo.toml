@@ -1,0 +1,17 @@
+[package]
+name = "complex_arguments"
+version = "0.1.0"
+authors = ["Mason Fischer <mason@kissr.co>"]
+
+[lib]
+crate-type = ["cdylib"]
+
+
+[dependencies]
+serde_cbor = { git = "https://github.com/chrysn-pull-requests/cbor", default-features = false}
+#wasm-rpc = { path = "../../../rust-wasm-rpc/wasm-rpc"}
+wee_alloc = { git = "https://github.com/rustwasm/wee_alloc" }
+#wasm-rpc-macros = { path = "../../../rust-wasm-rpc/wasm-rpc-macros"}
+#wee_alloc = "0.4.2"
+wasm-rpc = "0.2.9"
+wasm-rpc-macros = "0.2.9"

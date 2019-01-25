@@ -2,9 +2,9 @@
 name = "wasm-rpc"
 description = "WASM rpc is a standard interface to programs that compile to WebAssembly"
 license = "MIT"
-version = "0.2.7"
+version = "0.2.10"
 authors = ["Mason Fischer <mason@kissr.co>"]
 
 [dependencies]
-cbor-no-std = "0.3.0"
+serde_cbor = "0.9.0"
 wee_alloc = "0.4.2"

@@ -2,4 +2,15 @@
 members = [
     "wasm-rpc-macros",
     "wasm-rpc",
+    "examples/complex_arguments",
+    "examples/error_handler",
+    "examples/wasm_snappy",
 ]
+[profile.release]
+opt-level = "s"
+debug = false
+rpath = false
+lto = true
+debug-assertions = false
+codegen-units = 1
+incremental = false

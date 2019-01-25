@@ -1,29 +1,27 @@
 // Copied from https://raw.githubusercontent.com/DeMille/wasm-glue
 // Thanks Sterling DeMille!
 /// Sets stdout, stderr, and a custom panic hook
-
 use pointer::Referenceable;
-use std::string::String;
 use std::boxed::Box;
 use std::fmt;
 use std::fmt::Write;
-use std::panic;
 use std::io;
+use std::panic;
+use std::string::String;
 
 const LOG_LEVEL_ERROR: u32 = 1;
 const LOG_LEVEL_WARNING: u32 = 3;
 const LOG_LEVEL_INFO: u32 = 6;
 
-extern {
-    fn log_write(level: u32, message: *const u8);
+extern "C" {
+    fn _log_write(level: u32, message: *const u8);
 }
-
 
 fn _print(buf: &str) -> io::Result<()> {
     let string: String = buf.into();
 
     unsafe {
-        log_write(LOG_LEVEL_INFO, string.as_pointer());
+        _log_write(LOG_LEVEL_INFO, string.as_pointer());
     }
 
     Ok(())
@@ -33,7 +31,7 @@ fn _eprint(buf: &str) -> io::Result<()> {
     let string: String = buf.into();
 
     unsafe {
-        log_write(LOG_LEVEL_WARNING, string.as_pointer());
+        _log_write(LOG_LEVEL_WARNING, string.as_pointer());
     }
 
     Ok(())
@@ -54,8 +52,6 @@ pub fn _eprint_args(args: fmt::Arguments) {
     let _ = buf.write_fmt(args);
     let _ = _eprint(&buf);
 }
-
-
 
 type PrintFn = fn(&str) -> io::Result<()>;
 
@@ -109,7 +105,6 @@ impl io::Write for Printer {
     }
 }
 
-
 /// Sets a line-buffered stdout, uses your JavaScript `print` function
 pub fn set_stdout() {
     let printer = Printer::new(_print, true);
@@ -128,22 +123,10 @@ pub fn set_panic_hook() {
         let file = info.location().unwrap().file();
         let line = info.location().unwrap().line();
         let col = info.location().unwrap().column();
-
-        let msg = match info.payload().downcast_ref::<&'static str>() {
-            Some(s) => *s,
-            None => {
-                match info.payload().downcast_ref::<String>() {
-                    Some(s) => &s[..],
-                    None => "Box<Any>",
-                }
-            }
-        };
-
-        let err_info = format!("Panicked at '{}', {}:{}:{}", msg, file, line, col);
-        let string: String = err_info.into();
+        let message = format!("{}:{}:{} {}", file, line, col, info.message().unwrap());
 
         unsafe {
-            log_write(LOG_LEVEL_ERROR, string.as_pointer());
+            _log_write(LOG_LEVEL_ERROR, message.as_pointer());
         }
     }));
 }
