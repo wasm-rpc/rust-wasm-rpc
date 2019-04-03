@@ -10,13 +10,11 @@
 extern crate serde_cbor;
 mod bytes;
 pub mod error;
-mod external;
 mod memory;
 mod pointer;
 mod response;
 
 pub use bytes::{FromBytes, ToBytes};
-pub use external::{get_memory, get_storage, set_memory, set_storage};
 use memory::ptr_from_vec;
 pub use pointer::{Dereferenceable, Pointer, Referenceable};
 pub use response::{Bytes, Responsable};

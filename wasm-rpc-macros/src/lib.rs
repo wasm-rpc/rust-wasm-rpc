@@ -11,205 +11,166 @@ extern crate proc_macro;
 extern crate proc_macro2;
 extern crate syn;
 
-use proc_macro2::TokenStream;
+use proc_macro2::{Ident, Span, TokenStream};
+use syn::{
+    parse,
+    punctuated::Pair,
+    punctuated::Punctuated,
+    token::{Comma, RArrow},
+    ArgCaptured, Block, FnArg, FnDecl, Item, ItemFn, ItemMod, Pat, PatIdent, Path, PathSegment,
+    ReturnType, Type, TypePath,
+};
+
+const PRIMATIVES: &'static [&str] = &["i64", "i32", "i16", "i8", "u64", "u32", "u16", "u8"];
 
 #[proc_macro_attribute]
 pub fn export(
     _args: proc_macro::TokenStream,
     input: proc_macro::TokenStream,
 ) -> proc_macro::TokenStream {
-    let f: syn::ItemFn =
-        syn::parse(input.clone()).expect("`export` can only be applied to a function");
+    match parse(input) {
+        Ok(Item::Fn(f)) => export_fn(&f).into(),
+        Ok(Item::Mod(m)) => export_mod(m).into(),
+        _ => panic!("export can only be applied to a func or a module"),
+    }
+}
 
-    let syn::ItemFn {
+fn export_mod(m: ItemMod) -> TokenStream {
+    let funtions: TokenStream = m
+        .content
+        .unwrap()
+        .1
+        .iter()
+        .map(|item| match item {
+            Item::Fn(f) => export_fn(f),
+            _ => panic!("only funtions can be exported"),
+        })
+        .collect();
+    quote!(#funtions)
+}
+
+fn export_fn(f: &ItemFn) -> TokenStream {
+    let ItemFn {
         ident,
         decl: box decl,
         vis,
         block,
         ..
     } = f.clone();
-    let syn::FnDecl {
+    let FnDecl {
         inputs,
         output,
         fn_token,
         ..
     } = decl;
-    let new_inputs = rewrite_inputs_as_pointers(inputs.clone());
-    let result = inputs_to_pointers(output.clone(), inputs, block);
-    let response = wrap_result(output, result);
+    let pointer_inputs = rewrite_inputs_as_pointers(&inputs);
+    let result = dereference_pointers(&output, &inputs, &block);
+    let response = wrap_result(&output, &result);
 
     quote!(
-        #[cfg(not(test))]
-        #[no_mangle]
-        #vis #fn_token #ident (#(#new_inputs),*) -> wasm_rpc::Pointer
-        {
-            #[cfg(debug_assertions)]
-            wasm_rpc::hook();
-            #response
-        }
-        #[cfg(test)]
-        #f
+    #[cfg(not(test))]
+    #[no_mangle]
+    #vis #fn_token #ident (#(#pointer_inputs),*) -> wasm_rpc::Pointer
+    {
+        wasm_rpc::hook();
+        #response
+    }
+    #[cfg(test)]
+    #f
     )
-    .into()
 }
 
-#[proc_macro]
-pub fn require(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
-    let mut inputs: Vec<TokenStream> = macro_arguments(input.into());
-    let error = inputs.pop();
-    let condition = inputs.pop();
-
-    (quote!(if(!(#condition)){return Err(#error);})).into()
-}
-#[proc_macro]
-pub fn get(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
-    let inputs: Vec<TokenStream> = macro_arguments(input.into());
-    let key = concat_vecs(inputs);
-
-    (quote!(wasm_rpc::get_memory(#key))).into()
-}
-
-#[proc_macro]
-pub fn set(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
-    let mut inputs: Vec<TokenStream> = macro_arguments(input.into());
-    let value = inputs.pop();
-
-    let key = concat_vecs(inputs);
-
-    quote!(wasm_rpc::set_memory(#key, #value)).into()
-}
-
-#[proc_macro]
-pub fn load(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
-    let inputs: Vec<TokenStream> = macro_arguments(input.into());
-    let key = concat_vecs(inputs);
-
-    (quote!(wasm_rpc::get_storage(#key))).into()
-}
-
-#[proc_macro]
-pub fn store(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
-    let mut inputs: Vec<TokenStream> = macro_arguments(input.into());
-    let value = inputs.pop();
-    let key = concat_vecs(inputs);
-
-    quote!(wasm_rpc::set_storage(#key, #value)).into()
-}
-
-fn rewrite_inputs_as_pointers(
-    inputs: syn::punctuated::Punctuated<syn::FnArg, syn::token::Comma>,
-) -> Vec<TokenStream> {
+fn rewrite_inputs_as_pointers(inputs: &Punctuated<FnArg, Comma>) -> Vec<TokenStream> {
     inputs
-        .clone()
         .into_iter()
-        .map(|input| match input.clone() {
-            syn::FnArg::Captured(syn::ArgCaptured { pat, .. }) => quote!(#pat: wasm_rpc::Pointer),
+        .map(|input| match input {
+            FnArg::Captured(ArgCaptured { pat, .. }) => quote!(#pat: wasm_rpc::Pointer),
             input => quote!(#input),
         })
         .collect()
 }
-fn inputs_to_pointers(
-    return_type: syn::ReturnType,
-    inputs: syn::punctuated::Punctuated<syn::FnArg, syn::token::Comma>,
-    block: Box<syn::Block>,
+/// Take all the arugments that will be passed in as pointers and dereferences them
+/// The final output looks like this
+///
+/// |a: String, b: u32| {
+///     a.len() - b
+/// }(wasm_rpc::Dereferenceable.to_string("test"), wasm_rpc::Dereferenceable.to_i64(1))
+fn dereference_pointers(
+    return_type: &ReturnType,
+    inputs: &Punctuated<FnArg, Comma>,
+    block: &Box<Block>,
 ) -> TokenStream {
-    let pointers = inputs
-        .clone()
-        .into_iter()
-        .map(|input| match input.clone() {
-            syn::FnArg::Captured(syn::ArgCaptured {
-                pat: syn::Pat::Ident(syn::PatIdent { ident, .. }),
-                ty: syn::Type::Path(syn::TypePath { path, .. }),
-                ..
-            }) => {
-                let dref_fn = match quote!(#path).to_string().as_ref() {
-                    "BTreeMap < ObjectKey , Value >" => {
-                        quote!(wasm_rpc::Dereferenceable::to_object)
-                    }
-                    "String" => quote!(wasm_rpc::Dereferenceable::to_string),
-                    "Vec < u8 >" => quote!(wasm_rpc::Dereferenceable::to_bytes),
-                    "i64" => quote!(wasm_rpc::Dereferenceable::to_i64),
-                    "i32" => quote!(wasm_rpc::Dereferenceable::to_i64),
-                    "i16" => quote!(wasm_rpc::Dereferenceable::to_i64),
-                    "i8" => quote!(wasm_rpc::Dereferenceable::to_i64),
-                    "u64" => quote!(wasm_rpc::Dereferenceable::to_i64),
-                    "u32" => quote!(wasm_rpc::Dereferenceable::to_i64),
-                    "u16" => quote!(wasm_rpc::Dereferenceable::to_i64),
-                    "u8" => quote!(wasm_rpc::Dereferenceable::to_i64),
-                    _ => quote!(),
-                };
-
-                let is_integer = match quote!(#path).to_string().as_ref() {
-                    "i64" => true,
-                    "i32" => true,
-                    "i16" => true,
-                    "i8" => true,
-                    "u64" => true,
-                    "u32" => true,
-                    "u16" => true,
-                    "u8" => true,
-                    _ => false,
-                };
-
-                if is_integer {
-                    quote!(#dref_fn(&#ident) as #path)
-                } else {
-                    quote!(#dref_fn(&#ident))
-                }
-            }
-            _ => quote!(),
-        })
-        .collect::<Vec<TokenStream>>();
+    let pointers: Vec<TokenStream> = inputs.into_iter().map(&dereference_pointer).collect();
     quote!((|#(#inputs),*|#return_type{#block})(#(#pointers),*))
 }
-fn wrap_result(return_type: syn::ReturnType, result: TokenStream) -> TokenStream {
-    match return_type.clone() {
-        syn::ReturnType::Default => quote!(
-        #result;
-        wasm_rpc::Responsable::to_response(Ok(wasm_rpc::Value::Null))
-        ),
-        syn::ReturnType::Type(syn::token::RArrow(_), box path) => {
-            if quote!(#path).to_string().starts_with("Result") {
-                quote!(
-                wasm_rpc::Responsable::to_response((#result))
-                )
+
+fn dereference_pointer(input: &FnArg) -> TokenStream {
+    match input {
+        FnArg::Captured(ArgCaptured {
+            pat: Pat::Ident(PatIdent { ident, .. }),
+            ty: Type::Path(TypePath { path, .. }),
+            ..
+        }) => {
+            let dref_fn = dereference_function(path);
+
+            if is_primative(path) {
+                quote!(wasm_rpc::Dereferenceable::#dref_fn(&#ident) as #path)
             } else {
-                quote!(
-                wasm_rpc::Responsable::to_response(Ok(#result))
-                )
+                quote!(wasm_rpc::Dereferenceable::#dref_fn(&#ident))
             }
+        }
+        _ => panic!("wasm_rpc parse error"),
+    }
+}
+
+fn is_primative(path: &Path) -> bool {
+    PRIMATIVES.contains(&path_to_string(path).as_str())
+}
+
+fn type_to_string(ty: &Type) -> String {
+    match ty {
+        Type::Path(TypePath { path, .. }) => path_to_string(path),
+        _ => panic!("error parsing type"),
+    }
+}
+
+fn path_to_string(path: &Path) -> String {
+    match path.segments.first() {
+        Some(Pair::End(PathSegment { ident, .. })) => ident.to_string(),
+        _ => panic!("error parsing type path"),
+    }
+}
+
+fn dereference_function(path: &Path) -> proc_macro2::Ident {
+    if is_primative(path) {
+        Ident::new("to_i64", Span::call_site())
+    } else {
+        match path_to_string(path).as_ref() {
+            "BTreeMap" => Ident::new("to_object", Span::call_site()),
+            "String" => Ident::new("to_string", Span::call_site()),
+            "Vec" => Ident::new("to_bytes", Span::call_site()),
+            path_string => panic!("unsupportd wasm_rpc type: {}", path_string),
         }
     }
 }
-fn macro_arguments(tokens: TokenStream) -> Vec<TokenStream> {
-    tokens
-        .into_iter()
-        .map(|token| {
-            let tt: proc_macro2::TokenTree = token.into();
-            quote!(#tt)
-        })
-        .collect::<Vec<TokenStream>>()
-        .split(|token| match syn::parse(token.clone().into()) {
-            Ok(syn::token::Comma { .. }) => true,
-            _ => false,
-        })
-        .map(|items| quote!(#(#items)*))
-        .collect()
-}
 
-fn concat_vecs(vecs: Vec<TokenStream>) -> TokenStream {
-    let slices: Vec<TokenStream> = vecs
-        .iter()
-        .map(|argument| {
-            let slice = match syn::parse(argument.clone().into()) {
-                Ok(syn::LitStr { .. }) => quote!(#argument.as_bytes()),
-                _ => quote!(#argument.as_slice()),
-            };
+/// All wasm_rpc exports need to return responses
+/// If the function returns a raw response type wrap it with `Ok()`.
+/// If the result of a function is () return Ok(Null).
+///
 
-            quote!(#slice)
-        })
-        .collect();
-    quote! {
-        [#(#slices),*].concat()
+fn wrap_result(return_type: &ReturnType, result: &TokenStream) -> TokenStream {
+    match return_type.clone() {
+        ReturnType::Type(RArrow(_), box path) => {
+            if type_to_string(&path).starts_with("Result") {
+                quote!(wasm_rpc::Responsable::to_response((#result)))
+            } else {
+                quote!(wasm_rpc::Responsable::to_response(Ok(#result)))
+            }
+        }
+        ReturnType::Default => quote!(
+            #result;
+            wasm_rpc::Responsable::to_response(Ok(wasm_rpc::Value::Null))
+        ),
     }
 }
