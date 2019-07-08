@@ -1,14 +1,14 @@
+use memory::{ptr_to_u32, LENGTH_BYTE_COUNT};
 use serde_cbor::{from_slice, ObjectKey, Value};
 use std::collections::BTreeMap;
 use std::mem::transmute;
 use std::{mem, slice};
 
-pub const LENGTH_BYTE_COUNT: usize = 4;
-
 pub type Pointer = *const u8;
 
 pub unsafe trait Dereferenceable {
     fn as_raw_bytes(&self) -> Vec<u8>;
+    fn to_value(&self) -> Value;
     fn to_bytes(&self) -> Vec<u8>;
     fn to_i64(&self) -> i64;
     fn to_string(&self) -> String;
@@ -18,20 +18,12 @@ pub unsafe trait Dereferenceable {
 
 unsafe impl Dereferenceable for Pointer {
     fn as_raw_bytes(&self) -> Vec<u8> {
-        let length_slice = unsafe {
-            slice::from_raw_parts(self.offset(0) as *const u8, LENGTH_BYTE_COUNT as usize)
-        };
-        let mut length_slice_four: [u8; 4] = [0; 4];
-        length_slice_four.copy_from_slice(&length_slice[..]);
-        let length = unsafe { transmute::<[u8; 4], u32>(length_slice_four) };
+        let length = ptr_to_u32(*self) as usize;
+        unsafe { slice::from_raw_parts(self.offset(LENGTH_BYTE_COUNT), length).to_vec() }
+    }
 
-        unsafe {
-            slice::from_raw_parts(
-                self.offset(LENGTH_BYTE_COUNT as isize) as *const u8,
-                length as usize,
-            )
-            .to_vec()
-        }
+    fn to_value(&self) -> Value {
+        from_slice(&self.as_raw_bytes()).unwrap()
     }
 
     fn to_bytes(&self) -> Vec<u8> {
@@ -46,12 +38,12 @@ unsafe impl Dereferenceable for Pointer {
 
     fn to_string(&self) -> String {
         let value: Value = from_slice(&self.as_raw_bytes()).unwrap();
-        value.as_string().unwrap().clone()
+        value.as_string().unwrap().to_string()
     }
 
     fn to_array(&self) -> Vec<Value> {
         let name: Value = from_slice(&self.as_raw_bytes()).unwrap();
-        name.as_array().expect("expected array").clone()
+        name.as_array().expect("expected array").to_vec()
     }
 
     fn to_object(&self) -> BTreeMap<ObjectKey, Value> {

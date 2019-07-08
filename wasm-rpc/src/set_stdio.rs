@@ -14,14 +14,14 @@ const LOG_LEVEL_WARNING: u32 = 3;
 const LOG_LEVEL_INFO: u32 = 6;
 
 extern "C" {
-    fn _log_write(level: u32, message: *const u8);
+    fn __log_write(level: u32, message: *const u8);
 }
 
 fn _print(buf: &str) -> io::Result<()> {
     let string: String = buf.into();
 
     unsafe {
-        _log_write(LOG_LEVEL_INFO, string.as_pointer());
+        __log_write(LOG_LEVEL_INFO, string.as_pointer());
     }
 
     Ok(())
@@ -31,7 +31,7 @@ fn _eprint(buf: &str) -> io::Result<()> {
     let string: String = buf.into();
 
     unsafe {
-        _log_write(LOG_LEVEL_WARNING, string.as_pointer());
+        __log_write(LOG_LEVEL_WARNING, string.as_pointer());
     }
 
     Ok(())
@@ -126,12 +126,12 @@ pub fn set_panic_hook() {
         let message = format!("{}:{}:{} {}", file, line, col, info.message().unwrap());
 
         unsafe {
-            _log_write(LOG_LEVEL_ERROR, message.as_pointer());
+            __log_write(LOG_LEVEL_ERROR, message.as_pointer());
         }
     }));
 }
 
-pub fn hook() {
+pub fn set_stdio() {
     set_stdout();
     set_stderr();
     set_panic_hook();

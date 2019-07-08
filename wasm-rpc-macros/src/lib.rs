@@ -12,13 +12,11 @@ extern crate proc_macro2;
 extern crate syn;
 
 use proc_macro2::{Ident, Span, TokenStream};
+use quote::ToTokens;
 use syn::{
-    parse,
-    punctuated::Pair,
-    punctuated::Punctuated,
-    token::{Comma, RArrow},
-    ArgCaptured, Block, FnArg, FnDecl, Item, ItemFn, ItemMod, Pat, PatIdent, Path, PathSegment,
-    ReturnType, Type, TypePath,
+    parse, punctuated::Pair, punctuated::Punctuated, token::Comma, ArgCaptured, Block, FnArg,
+    FnDecl, Item, ItemFn, ItemMod, Pat, PatIdent, Path, PathSegment, ReturnType, Type, TypePath,
+    Visibility,
 };
 
 const PRIMATIVES: &'static [&str] = &["i64", "i32", "i16", "i8", "u64", "u32", "u16", "u8"];
@@ -42,13 +40,28 @@ fn export_mod(m: ItemMod) -> TokenStream {
         .1
         .iter()
         .map(|item| match item {
-            Item::Fn(f) => export_fn(f),
-            _ => panic!("only funtions can be exported"),
+            Item::Fn(f) => {
+                if is_public(f) {
+                    export_fn(f)
+                } else {
+                    f.into_token_stream()
+                }
+            }
+            _ => item.into_token_stream(),
         })
         .collect();
     quote!(#funtions)
 }
 
+fn is_public(f: &ItemFn) -> bool {
+    match f {
+        ItemFn {
+            vis: Visibility::Public(_),
+            ..
+        } => true,
+        _ => false,
+    }
+}
 fn export_fn(f: &ItemFn) -> TokenStream {
     let ItemFn {
         ident,
@@ -72,7 +85,7 @@ fn export_fn(f: &ItemFn) -> TokenStream {
     #[no_mangle]
     #vis #fn_token #ident (#(#pointer_inputs),*) -> wasm_rpc::Pointer
     {
-        wasm_rpc::hook();
+        wasm_rpc::set_stdio();
         #response
     }
     #[cfg(test)]
@@ -111,11 +124,13 @@ fn dereference_pointer(input: &FnArg) -> TokenStream {
             ty: Type::Path(TypePath { path, .. }),
             ..
         }) => {
-            let dref_fn = dereference_function(path);
-
             if is_primative(path) {
+                let dref_fn = dereference_function(path);
+
                 quote!(wasm_rpc::Dereferenceable::#dref_fn(&#ident) as #path)
             } else {
+                let dref_fn = dereference_function(path);
+
                 quote!(wasm_rpc::Dereferenceable::#dref_fn(&#ident))
             }
         }
@@ -149,6 +164,7 @@ fn dereference_function(path: &Path) -> proc_macro2::Ident {
             "BTreeMap" => Ident::new("to_object", Span::call_site()),
             "String" => Ident::new("to_string", Span::call_site()),
             "Vec" => Ident::new("to_bytes", Span::call_site()),
+            "Value" => Ident::new("to_value", Span::call_site()),
             path_string => panic!("unsupportd wasm_rpc type: {}", path_string),
         }
     }
@@ -161,7 +177,7 @@ fn dereference_function(path: &Path) -> proc_macro2::Ident {
 
 fn wrap_result(return_type: &ReturnType, result: &TokenStream) -> TokenStream {
     match return_type.clone() {
-        ReturnType::Type(RArrow(_), box path) => {
+        ReturnType::Type(_, box path) => {
             if type_to_string(&path).starts_with("Result") {
                 quote!(wasm_rpc::Responsable::to_response((#result)))
             } else {

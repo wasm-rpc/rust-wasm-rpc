@@ -1,6 +1,6 @@
 [package]
 name = "wasm-rpc-macros"
-version = "0.2.10"
+version = "0.2.11"
 description = "Expose rust functions as WASM RPC interfaces"
 license = "MIT"
 authors = ["Mason Fischer <mason@kissr.co>"]
@@ -9,6 +9,6 @@ authors = ["Mason Fischer <mason@kissr.co>"]
 proc-macro = true
 
 [dependencies]
-proc-macro2 = { version = "0.4.9", default-features = false }
-syn = { version = "0.14.5", features = ["full", "visit"] }
-quote = "0.6.4"
+proc-macro2 = { version = "0.4.30", default-features = false }
+syn = { version = "0.15.38", features = ["full", "visit"] }
+quote = "0.6.12"

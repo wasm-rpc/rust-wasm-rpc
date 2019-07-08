@@ -1,6 +1,6 @@
 use wasm_rpc::error::{Error, ErrorStruct};
-use wasm_rpc_macros::export;
 use wasm_rpc::Value;
+use wasm_rpc_macros::export;
 
 pub const EXAMPLE_ERROR: ErrorStruct<'static> = Error {
     code: 1,

@@ -8,18 +8,11 @@ pub trait Responsable {
     fn to_response(self) -> Pointer;
 }
 
-// impl<T: Into<Value>> Responsable for T {
-//     fn to_response(self) -> Pointer {
-//         Ok::<Value, Error>(self.into()).to_response()
-//     }
-// }
-
 impl<V: Into<Value>> Responsable for Result<V, Error> {
     fn to_response(self: Result<V, Error>) -> Pointer {
         let (return_code, mut return_value) = match self {
             Ok(value) => (0, to_vec(&value.into()).unwrap()),
             Err(error) => {
-                // let e: Errorable = *error;
                 (
                     error.code,
                     to_vec(&Value::String(error.message.to_string())).unwrap(),
@@ -34,33 +27,6 @@ impl<V: Into<Value>> Responsable for Result<V, Error> {
         return_code_bytes.as_pointer()
     }
 }
-
-// impl Responsable for Result<(),  Error> {
-//     fn to_response(self) -> Pointer {
-//         match self {
-//             Ok(value) => Ok(Value::Null).to_response(),
-//             Err(error) => Err::<Value, Error>(error).to_response(),
-//         }
-//     }
-// }
-
-// impl Responsable for String {
-//     fn to_response(self) -> Pointer {
-//         Ok::<Value, Error>(self.into()).to_response()
-//     }
-// }
-
-// impl Responsable for u64 {
-//     fn to_response(self) -> Pointer {
-//         Ok::<Value, Error>(self.into()).to_response()
-//     }
-// }
-
-// impl Responsable for () {
-//     fn to_response(self) -> Pointer {
-//         Ok(Value::Null).to_response()
-//     }
-// }
 
 pub trait Bytes<T> {
     fn value(&self) -> T;
