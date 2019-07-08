@@ -25,7 +25,7 @@ name = "error_handler"
 version = "0.1.0"
 dependencies = [
  "wasm-rpc 0.2.11",
- "wasm-rpc-macros 0.2.11",
+ "wasm-rpc-macros 0.2.12",
 ]
 
 [[package]]
@@ -165,7 +165,7 @@ dependencies = [
 
 [[package]]
 name = "wasm-rpc-macros"
-version = "0.2.11"
+version = "0.2.12"
 dependencies = [
  "proc-macro2 0.4.30 (registry+https://github.com/rust-lang/crates.io-index)",
  "quote 0.6.12 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -178,7 +178,7 @@ version = "0.1.0"
 dependencies = [
  "snap 0.2.5 (registry+https://github.com/rust-lang/crates.io-index)",
  "wasm-rpc 0.2.11",
- "wasm-rpc-macros 0.2.11",
+ "wasm-rpc-macros 0.2.12",
 ]
 
 [[package]]
