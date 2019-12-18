@@ -14,8 +14,8 @@ impl<V: Into<Value>> Responsable for Result<V, Error> {
             Ok(value) => (0, to_vec(&value.into()).unwrap()),
             Err(error) => {
                 (
-                    error.code,
-                    to_vec(&Value::String(error.message.to_string())).unwrap(),
+                    error.0,
+                    to_vec(&serde_cbor::Value::String(error.1)).unwrap(),
                 )
             }
         };

@@ -2,6 +2,7 @@ use memory::{ptr_to_u32, LENGTH_BYTE_COUNT};
 use serde_cbor::{from_slice, ObjectKey, Value};
 use std::collections::BTreeMap;
 use std::mem::transmute;
+use serde_cbor::to_vec;
 use std::{mem, slice};
 
 pub type Pointer = *const u8;
@@ -71,5 +72,17 @@ unsafe impl Referenceable for Vec<u8> {
 unsafe impl Referenceable for String {
     fn as_pointer(&self) -> Pointer {
         self.as_bytes().to_vec().as_pointer()
+    }
+}
+
+unsafe impl Referenceable for Value {
+    fn as_pointer(&self) -> Pointer {
+        to_vec(self).unwrap().as_pointer()
+    }
+}
+
+unsafe impl Referenceable for Vec<Value> {
+    fn as_pointer(&self) -> Pointer {
+        Value::Array(self.to_vec()).as_pointer()
     }
 }
