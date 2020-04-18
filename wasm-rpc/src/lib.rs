@@ -6,10 +6,12 @@
     try_trait
 )]
 
+extern crate serde;
 extern crate serde_cbor;
 mod bytes;
 mod debug;
 pub mod error;
+pub mod abort;
 mod memory;
 mod pointer;
 mod response;
@@ -18,7 +20,7 @@ mod set_stdio;
 pub use bytes::{FromBytes, ToBytes};
 pub use pointer::{Dereferenceable, Pointer, Referenceable};
 pub use response::{Bytes, Responsable};
-pub use serde_cbor::{from_slice, to_vec, ObjectKey, Value};
+pub use serde_cbor::{from_slice, value, to_vec, Value};
 pub use std::collections::BTreeMap;
 
 pub use set_stdio::set_stdio;

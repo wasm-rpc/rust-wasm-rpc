@@ -1,3 +1,4 @@
+use abort::AbortResultExt;
 use error::Error;
 use pointer::Pointer;
 use pointer::Referenceable;
@@ -10,21 +11,7 @@ pub trait Responsable {
 
 impl<V: Into<Value>> Responsable for Result<V, Error> {
     fn to_response(self: Result<V, Error>) -> Pointer {
-        let (return_code, mut return_value) = match self {
-            Ok(value) => (0, to_vec(&value.into()).unwrap()),
-            Err(error) => {
-                (
-                    error.0,
-                    to_vec(&serde_cbor::Value::String(error.1)).unwrap(),
-                )
-            }
-        };
-
-        let mut return_code_bytes =
-            unsafe { transmute::<u32, [u8; 4]>(return_code as u32) }.to_vec();
-
-        return_code_bytes.append(&mut return_value);
-        return_code_bytes.as_pointer()
+        to_vec(&self.unwrap_or_abort().into()).unwrap_or_abort().as_pointer()
     }
 }
 

@@ -6,10 +6,8 @@ use std::boxed::Box;
 use std::fmt;
 use std::fmt::Write;
 use std::io;
-use std::panic;
 use std::string::String;
 
-const LOG_LEVEL_ERROR: u32 = 1;
 const LOG_LEVEL_WARNING: u32 = 3;
 const LOG_LEVEL_INFO: u32 = 6;
 
@@ -117,22 +115,7 @@ pub fn set_stderr() {
     io::set_panic(Some(Box::new(eprinter)));
 }
 
-/// Sets a custom panic hook, uses your JavaScript `trace` function
-pub fn set_panic_hook() {
-    panic::set_hook(Box::new(|info| {
-        let file = info.location().unwrap().file();
-        let line = info.location().unwrap().line();
-        let col = info.location().unwrap().column();
-        let message = format!("{}:{}:{} {}", file, line, col, info.message().unwrap());
-
-        unsafe {
-            __log_write(LOG_LEVEL_ERROR, message.as_pointer());
-        }
-    }));
-}
-
 pub fn set_stdio() {
     set_stdout();
     set_stderr();
-    set_panic_hook();
 }

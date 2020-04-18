@@ -1,9 +1,5 @@
 #![feature(
-    type_ascription,
     box_patterns,
-    proc_macro_quote,
-    rustc_private,
-    proc_macro_hygiene
 )]
 #[macro_use]
 extern crate quote;
@@ -11,15 +7,13 @@ extern crate proc_macro;
 extern crate proc_macro2;
 extern crate syn;
 
-use proc_macro2::{Ident, Span, TokenStream};
+use proc_macro2::TokenStream;
 use quote::ToTokens;
 use syn::{
-    parse, punctuated::Pair, punctuated::Punctuated, token::Comma, ArgCaptured, Block, FnArg,
-    FnDecl, Item, ItemFn, ItemMod, Pat, PatIdent, Path, PathSegment, ReturnType, Type, TypePath,
+    parse, punctuated::Punctuated, token::Comma, ArgCaptured, Block, FnArg,
+    FnDecl, Item, ItemFn, ItemMod, Pat, PatIdent, ReturnType,
     Visibility,
 };
-
-const PRIMATIVES: &'static [&str] = &["i64", "i32", "i16", "i8", "u64", "u32", "u16", "u8"];
 
 #[proc_macro_attribute]
 pub fn export(
@@ -102,12 +96,12 @@ fn rewrite_inputs_as_pointers(inputs: &Punctuated<FnArg, Comma>) -> Vec<TokenStr
         })
         .collect()
 }
-/// Take all the arugments that will be passed in as pointers and dereferences them
+/// Take all the arguments that will be passed in as pointers and dereference them
 /// The final output looks like this
 ///
 /// |a: String, b: u32| {
 ///     a.len() - b
-/// }(wasm_rpc::Dereferenceable.to_string("test"), wasm_rpc::Dereferenceable.to_i64(1))
+/// }(wasm_rpc::abort::AbortResultExt::unwrap_or_abort(wasm_rpc::from_slice(&wasm_rpc::Dereferenceable::as_raw_bytes("test"), wasm_rpc::abort::AbortResultExt::unwrap_or_abort(wasm_rpc::from_slice(&wasm_rpc::Dereferenceable::as_raw_bytes(1))
 fn dereference_pointers(
     return_type: &ReturnType,
     inputs: &Punctuated<FnArg, Comma>,
@@ -121,72 +115,26 @@ fn dereference_pointer(input: &FnArg) -> TokenStream {
     match input {
         FnArg::Captured(ArgCaptured {
             pat: Pat::Ident(PatIdent { ident, .. }),
-            ty: Type::Path(TypePath { path, .. }),
             ..
         }) => {
-            if is_primative(path) {
-                let dref_fn = dereference_function(path);
-
-                quote!(wasm_rpc::Dereferenceable::#dref_fn(&#ident) as #path)
-            } else {
-                let dref_fn = dereference_function(path);
-
-                quote!(wasm_rpc::Dereferenceable::#dref_fn(&#ident))
-            }
+            quote!(wasm_rpc::abort::AbortResultExt::unwrap_or_abort(wasm_rpc::from_slice(&wasm_rpc::Dereferenceable::as_raw_bytes(&#ident))))
         }
         _ => panic!("wasm_rpc parse error"),
     }
 }
 
-fn is_primative(path: &Path) -> bool {
-    PRIMATIVES.contains(&path_to_string(path).as_str())
-}
-
-fn type_to_string(ty: &Type) -> String {
-    match ty {
-        Type::Path(TypePath { path, .. }) => path_to_string(path),
-        _ => panic!("error parsing type"),
-    }
-}
-
-fn path_to_string(path: &Path) -> String {
-    match path.segments.first() {
-        Some(Pair::End(PathSegment { ident, .. })) => ident.to_string(),
-        _ => panic!("error parsing type path"),
-    }
-}
-
-fn dereference_function(path: &Path) -> proc_macro2::Ident {
-    if is_primative(path) {
-        Ident::new("to_i64", Span::call_site())
-    } else {
-        match path_to_string(path).as_ref() {
-            "BTreeMap" => Ident::new("to_object", Span::call_site()),
-            "String" => Ident::new("to_string", Span::call_site()),
-            "Vec" => Ident::new("to_bytes", Span::call_site()),
-            "Value" => Ident::new("to_value", Span::call_site()),
-            path_string => panic!("unsupportd wasm_rpc type: {}", path_string),
-        }
-    }
-}
-
 /// All wasm_rpc exports need to return responses
-/// If the function returns a raw response type wrap it with `Ok()`.
-/// If the result of a function is () return Ok(Null).
+/// If the result of a function is () return Null
 ///
 
 fn wrap_result(return_type: &ReturnType, result: &TokenStream) -> TokenStream {
     match return_type.clone() {
-        ReturnType::Type(_, box path) => {
-            if type_to_string(&path).starts_with("Result") {
-                quote!(wasm_rpc::Responsable::to_response((#result)))
-            } else {
-                quote!(wasm_rpc::Responsable::to_response(Ok(#result)))
-            }
+        ReturnType::Type(_, _) => {
+            quote!(wasm_rpc::Referenceable::as_pointer(&wasm_rpc::abort::AbortResultExt::unwrap_or_abort(wasm_rpc::to_vec(&#result))))
         }
         ReturnType::Default => quote!(
             #result;
-            wasm_rpc::Responsable::to_response(Ok(wasm_rpc::Value::Null))
+            wasm_rpc::Referenceable::as_pointer(&wasm_rpc::Value::Null)
         ),
     }
 }

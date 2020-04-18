@@ -6,5 +6,6 @@ version = "0.2.13"
 authors = ["Mason Fischer <mason@kissr.co>"]
 
 [dependencies]
-serde_cbor = "0.9.0"
+serde = { version = "1.0.105", features = ["derive"] }
+serde_cbor = "0.11.1"
 wee_alloc = "0.4.2"
