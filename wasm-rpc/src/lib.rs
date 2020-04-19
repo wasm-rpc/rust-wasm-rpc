@@ -7,6 +7,7 @@
 )]
 
 extern crate serde;
+pub extern crate serde_bytes;
 extern crate serde_cbor;
 mod bytes;
 mod debug;

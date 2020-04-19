@@ -40,6 +40,12 @@ impl ToBytes for String {
     }
 }
 
+impl ToBytes for serde_bytes::ByteBuf {
+    fn to_bytes(self: Self) -> Vec<u8> {
+        self.to_vec()
+    }
+}
+
 impl ToBytes for Vec<u8> {
     fn to_bytes(self: Self) -> Vec<u8> {
         self

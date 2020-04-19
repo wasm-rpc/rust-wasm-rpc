@@ -3,6 +3,7 @@ use memory::{ptr_to_u32, LENGTH_BYTE_COUNT};
 use serde_cbor::Value;
 use serde_cbor::to_vec;
 use std::slice;
+use std::mem::ManuallyDrop;
 
 pub type Pointer = *const u8;
 
@@ -23,9 +24,9 @@ pub unsafe trait Referenceable {
 
 unsafe impl Referenceable for Vec<u8> {
     fn as_pointer(&self) -> Pointer {
-        [self.len().to_le_bytes().to_vec(), self.to_vec()]
-            .concat()
-            .as_ptr()
+        let value_and_length = [(self.len() as i32).to_le_bytes().to_vec(), self.to_vec()]
+            .concat();
+        ManuallyDrop::new(value_and_length).as_mut_ptr()
     }
 }
 

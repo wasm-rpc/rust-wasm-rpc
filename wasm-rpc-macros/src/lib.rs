@@ -117,7 +117,7 @@ fn dereference_pointer(input: &FnArg) -> TokenStream {
             pat: Pat::Ident(PatIdent { ident, .. }),
             ..
         }) => {
-            quote!(wasm_rpc::abort::AbortResultExt::unwrap_or_abort(wasm_rpc::from_slice(&wasm_rpc::Dereferenceable::as_raw_bytes(&#ident))))
+            quote!(wasm_rpc::from_slice(&wasm_rpc::Dereferenceable::as_raw_bytes(&#ident)).unwrap())
         }
         _ => panic!("wasm_rpc parse error"),
     }
@@ -130,9 +130,9 @@ fn dereference_pointer(input: &FnArg) -> TokenStream {
 fn wrap_result(return_type: &ReturnType, result: &TokenStream) -> TokenStream {
     match return_type.clone() {
         ReturnType::Type(_, _) => {
-            quote!(wasm_rpc::Referenceable::as_pointer(&wasm_rpc::abort::AbortResultExt::unwrap_or_abort(wasm_rpc::to_vec(&#result))))
+            quote!(wasm_rpc::Referenceable::as_pointer(&wasm_rpc::to_vec(&#result).unwrap()))
         }
-        ReturnType::Default => quote!(
+        _ => quote!(
             #result;
             wasm_rpc::Referenceable::as_pointer(&wasm_rpc::Value::Null)
         ),
