@@ -1,49 +1,49 @@
-use abort::AbortResultExt;
-use memory::{ptr_to_u32, LENGTH_BYTE_COUNT};
-use serde_cbor::Value;
-use serde_cbor::to_vec;
-use std::slice;
+use serde::de::DeserializeOwned;
+use serde_cbor::{from_slice, to_vec};
 use std::mem::ManuallyDrop;
+use std::convert::TryInto;
+use serde::Serialize;
+use std::slice;
+use std::mem;
 
 pub type Pointer = *const u8;
+pub const LENGTH_BYTE_COUNT: isize = 4;
 
-pub unsafe trait Dereferenceable {
-    fn as_raw_bytes(&self) -> Vec<u8>;
+pub unsafe fn free(ptr: *mut u8) {
+    let length = ptr_to_u32(ptr) as usize;
+    Vec::from_raw_parts(ptr.offset(LENGTH_BYTE_COUNT), length, length);
 }
 
-unsafe impl Dereferenceable for Pointer {
-    fn as_raw_bytes(&self) -> Vec<u8> {
-        let length = ptr_to_u32(*self) as usize;
-        unsafe { slice::from_raw_parts(self.offset(LENGTH_BYTE_COUNT), length).to_vec() }
-    }
+pub fn ptr_to_u32(ptr: *const u8) -> u32 {
+    let length_slice = unsafe { slice::from_raw_parts(ptr, LENGTH_BYTE_COUNT as usize) };
+    u32::from_le_bytes(length_slice.try_into().unwrap())
 }
 
-pub unsafe trait Referenceable {
-    fn as_pointer(&self) -> Pointer;
+pub fn malloc(size: usize) -> *mut u8 {
+    ptr_from_vec(Vec::with_capacity(size))
+}
+#[inline]
+pub fn ptr_from_vec(mut buf: Vec<u8>) -> *mut u8 {
+    let ptr = buf.as_mut_ptr();
+    mem::forget(buf);
+
+    ptr
 }
 
-unsafe impl Referenceable for Vec<u8> {
-    fn as_pointer(&self) -> Pointer {
-        let value_and_length = [(self.len() as i32).to_le_bytes().to_vec(), self.to_vec()]
-            .concat();
-        ManuallyDrop::new(value_and_length).as_mut_ptr()
-    }
+pub fn to_value<T: DeserializeOwned>(ptr: Pointer) -> Result<T, serde_cbor::Error> {
+    from_slice::<T>(to_bytes(ptr))
 }
 
-unsafe impl Referenceable for String {
-    fn as_pointer(&self) -> Pointer {
-        self.as_bytes().to_vec().as_pointer()
-    }
+pub fn to_bytes<'a>(ptr: Pointer) -> &'a [u8] {
+    let length = ptr_to_u32(ptr) as usize;
+    unsafe { slice::from_raw_parts(ptr.offset(LENGTH_BYTE_COUNT), length) }
 }
 
-unsafe impl Referenceable for Value {
-    fn as_pointer(&self) -> Pointer {
-        to_vec(self).unwrap_or_abort().as_pointer()
-    }
+pub fn from_value<V: Serialize>(value: &V) -> Pointer {
+    from_bytes(&to_vec(&value).unwrap())
 }
 
-unsafe impl Referenceable for Vec<Value> {
-    fn as_pointer(&self) -> Pointer {
-        Value::Array(self.to_vec()).as_pointer()
-    }
+pub fn from_bytes(bytes: &[u8]) -> Pointer {
+    let value_and_length = [&(bytes.len() as i32).to_le_bytes()[..], bytes].concat();
+    ManuallyDrop::new(value_and_length).as_mut_ptr()
 }

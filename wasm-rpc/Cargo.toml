@@ -2,12 +2,10 @@
 name = "wasm-rpc"
 description = "WASM rpc is a standard interface to programs that compile to WebAssembly"
 license = "MIT"
-version = "0.2.13"
+version = "0.2.15"
 authors = ["Mason Fischer <mason@kissr.co>"]
 
 [dependencies]
-serde = { version = "1.0.105", features = ["derive"] }
+serde = { version = "1.0.114", features = ["derive"] }
 serde_cbor = "0.11.1"
 serde_bytes = "0.11.3"
-hex = "*"
-wee_alloc = "0.4.2"
