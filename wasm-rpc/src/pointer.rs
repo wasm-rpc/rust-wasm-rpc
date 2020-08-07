@@ -1,10 +1,10 @@
 use serde::de::DeserializeOwned;
-use serde_cbor::{from_slice, to_vec};
-use std::mem::ManuallyDrop;
-use std::convert::TryInto;
 use serde::Serialize;
-use std::slice;
+use serde_cbor::{from_slice, to_vec};
+use std::convert::TryInto;
 use std::mem;
+use std::mem::ManuallyDrop;
+use std::slice;
 
 pub type Pointer = *const u8;
 pub const LENGTH_BYTE_COUNT: isize = 4;
