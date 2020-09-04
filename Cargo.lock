@@ -24,8 +24,8 @@ dependencies = [
 name = "error_handler"
 version = "0.1.0"
 dependencies = [
- "wasm-rpc 0.2.15",
- "wasm-rpc-macros 0.2.15",
+ "wasm-rpc 0.2.16",
+ "wasm-rpc-macros 0.2.16",
 ]
 
 [[package]]
@@ -198,7 +198,7 @@ dependencies = [
 
 [[package]]
 name = "wasm-rpc"
-version = "0.2.15"
+version = "0.2.16"
 dependencies = [
  "serde 1.0.114 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_bytes 0.11.5 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -217,7 +217,7 @@ dependencies = [
 
 [[package]]
 name = "wasm-rpc-macros"
-version = "0.2.15"
+version = "0.2.16"
 dependencies = [
  "proc-macro2 1.0.18 (registry+https://github.com/rust-lang/crates.io-index)",
  "quote 1.0.7 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -229,8 +229,8 @@ name = "wasm_snappy"
 version = "0.1.0"
 dependencies = [
  "snap 0.2.5 (registry+https://github.com/rust-lang/crates.io-index)",
- "wasm-rpc 0.2.15",
- "wasm-rpc-macros 0.2.15",
+ "wasm-rpc 0.2.16",
+ "wasm-rpc-macros 0.2.16",
 ]
 
 [[package]]

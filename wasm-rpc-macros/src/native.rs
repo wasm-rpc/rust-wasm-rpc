@@ -28,9 +28,14 @@ pub fn export_native(tokens: TokenStream) -> TokenStream {
     stmts.push(parse_quote!(
             pub fn call<API: ellipticoin::API>(api: &mut API, function: &str, args: Vec<serde_cbor::Value>) -> wasm_rpc::serde_cbor::Value {
         #matcher
+        }));
+    quote!(
+pub mod native {
+use super::*;
+        #(#stmts)*
     }
-        ));
-    quote!(#(#stmts)*).into()
+        
+    ).into()
 }
 
 fn fn_to_arm(f: &syn::ItemFn) -> syn::Arm {
