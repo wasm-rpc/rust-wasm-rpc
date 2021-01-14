@@ -70,7 +70,7 @@ fn fn_to_arm(f: &syn::ItemFn) -> syn::Arm {
         .iter()
         .map(|arg| {
             let arg_name = syn::LitStr::new(&arg.to_string(), proc_macro2::Span::call_site());
-            parse_quote!(match wasm_rpc::serde_cbor::value::from_value(#arg.clone()){Ok(value) => value, Err(error) => return wasm_rpc::serde_cbor::value::to_value::<std::result::Result<wasm_rpc::serde_cbor::value::Value, String>>(Err(format!("{}: {}",#arg_name, error.to_string()))).unwrap()})
+            parse_quote!(match wasm_rpc::serde_cbor::value::from_value(#arg.clone()){Ok(value) => value, Err(error) => return wasm_rpc::serde_cbor::value::to_value::<std::result::Result<wasm_rpc::serde_cbor::value::Value, Box<wasm_rpc::error::Error>>>(Err(Box::new(wasm_rpc::error::Error { code: 1, message: format!("{}: {}",#arg_name, error.to_string())}))).unwrap()})
         })
         .collect::<Vec<syn::Expr>>();
     parse_quote!((#function_name, [#(#rest_args),*]) =>
